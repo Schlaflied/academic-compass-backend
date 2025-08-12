@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
 # “学术罗盘”后端核心应用 (Academic Compass Backend Core)
-# 版本: 1.2 - 配置完成，准备运行
-# 描述: 根据“学术罗盘”作战蓝图V1.1构建，旨在为用户探索学术背景下的多种职业可能性。
+# 版本: 1.3 - 安全加固版
+# 描述: 移除了硬编码的API密钥，强制使用环境变量，修复了安全漏洞。
 # -----------------------------------------------------------------------------
 
 import os
@@ -10,42 +10,37 @@ import requests
 import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+# python-dotenv 可以在本地开发时自动从 .env 文件加载环境变量
+from dotenv import load_dotenv
 
 # --- 1. 初始化和配置 (Initialization and Configuration) ---
+load_dotenv() # 加载 .env 文件中的环境变量
 app = Flask(__name__)
 # 允许所有来源的跨域请求，方便前后端分离开发
 CORS(app)
 
 # --- 2. API密钥配置 (API Key Configuration) ---
-# 优先从环境变量加载API密钥，这是云部署的最佳实践
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-SEARCH_API_KEY = os.getenv("SEARCH_API_KEY")
-SEARCH_ENGINE_ID = os.getenv("SEARCH_ENGINE_ID")
-
-# 如果环境变量中没有找到，则使用你提供的密钥作为本地测试的后备
-# For security, it's highly recommended to use environment variables for deployment.
-if not all([GEMINI_API_KEY, SEARCH_API_KEY, SEARCH_ENGINE_ID]):
-    print("⚠️ 未在环境变量中找到所有API密钥，将使用代码中为本地测试提供的后备密钥。")
-    print("⚠️ For deployment, please use environment variables instead of hardcoding keys.")
-    
-    # 你提供的Google API密钥
-    PROVIDED_API_KEY = "AIzaSyCkOT-H7wG6pqZRYuzCxsOub0v6ptQ0GA8"
-    
-    GEMINI_API_KEY = PROVIDED_API_KEY
-    SEARCH_API_KEY = PROVIDED_API_KEY
-    # 【配置完成】已使用你提供的搜索引擎ID
-    # [CONFIGURATION COMPLETE] Using your provided Search Engine ID.
-    SEARCH_ENGINE_ID = "c0b2c93feb47f4629" 
-
+# 【安全更新】代码已移除所有硬编码的API密钥。
+# 现在程序将严格从环境变量中读取密钥。
+# 本地开发时，请在项目根目录创建 .env 文件来管理密钥。
+# 部署到云端时，请在云服务提供商的控制台中设置环境变量。
 try:
-    # 再次检查，确保所有密钥和ID都已加载
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    SEARCH_API_KEY = os.getenv("SEARCH_API_KEY")
+    SEARCH_ENGINE_ID = os.getenv("SEARCH_ENGINE_ID")
+    
     if not all([GEMINI_API_KEY, SEARCH_API_KEY, SEARCH_ENGINE_ID]):
-         raise ValueError("API密钥和搜索引擎ID未能成功加载。请检查环境变量或代码中的后备值。")
+        raise ValueError(
+            "一个或多个关键的环境变量缺失 (GEMINI_API_KEY, SEARCH_API_KEY, SEARCH_ENGINE_ID)。"
+            "请检查你的 .env 文件或云端配置。"
+        )
     
     genai.configure(api_key=GEMINI_API_KEY)
     print("✅ 所有API密钥配置成功！(All API keys configured successfully!)")
-except Exception as e:
-    print(f"❌ API密钥配置失败 (API key configuration failed): {e}")
+except ValueError as e:
+    print(f"❌ 配置错误 (Configuration Error): {e}")
+    # 如果密钥缺失，程序将无法正常工作。
+    # 在实际部署中，这应该导致服务启动失败。
 
 
 # --- 3. 辅助函数 (Helper Functions) ---
@@ -56,13 +51,11 @@ def perform_google_search(query, api_key, cse_id):
     Executes a Google Custom Search and returns snippets and sources.
     """
     url = "https://www.googleapis.com/customsearch/v1"
-    # 'num': 3 意味着每个查询最多返回3个结果，以保持信息聚焦
     params = {'key': api_key, 'cx': cse_id, 'q': query, 'num': 3}
     try:
         response = requests.get(url, params=params)
-        response.raise_for_status()  # 如果请求失败则抛出异常
+        response.raise_for_status()
         search_results = response.json()
-        # 安全地提取条目，避免因没有'items'键而出错
         items = search_results.get('items', [])
         snippets = [item.get('snippet', '') for item in items]
         sources = [{'title': item.get('title'), 'link': item.get('link')} for item in items]
@@ -76,20 +69,14 @@ def generate_search_queries(major, interests):
     根据用户的专业和兴趣，动态生成一系列精确的Google搜索查询。
     Dynamically generates a series of precise Google search queries based on the user's major and interests.
     """
-    # 如果用户输入了更具体的兴趣，将其加入到主要专业领域中，使搜索更精确
     primary_query_subject = f'"{major}"'
     if interests:
         primary_query_subject += f' AND "{interests}"'
 
-    # 根据作战蓝图设计的查询策略
     queries = [
-        # 查询实例1 (找人): 在LinkedIn上寻找该领域的从业者
         f'{primary_query_subject} "Research Scientist" OR "Product Manager" OR "Data Scientist" site:linkedin.com',
-        # 查询实例2 (找薪资): 在Glassdoor和Levels.fyi上寻找薪资信息
         f'{primary_query_subject} salary site:glassdoor.com OR site:levels.fyi',
-        # 查询实例3 (找职位): 在知名科技公司的招聘网站上寻找相关职位
         f'{primary_query_subject} jobs site:careers.google.com OR site:jobs.apple.com OR site:careers.microsoft.com',
-        # 查询实例4 (找创业者): 在TechCrunch和YCombinator上寻找该领域的创始人
         f'({primary_query_subject}) founder OR startup site:techcrunch.com OR site:ycombinator.com'
     ]
     return queries
@@ -145,28 +132,29 @@ List 1-2 relevant job titles or links found in the search results.
 # --- 5. API路由 (API Route) ---
 @app.route('/analyze', methods=['POST'])
 def analyze_academic_profile():
-    print("--- 🧭 学术罗盘 v1.2 分析请求已收到! (Academic Compass v1.2 analysis request received!) ---")
+    print("--- 🧭 学术罗盘 v1.3 分析请求已收到! (Academic Compass v1.3 analysis request received!) ---")
     try:
+        # 检查API密钥是否已成功加载，如果未加载则提前返回错误
+        if not all([GEMINI_API_KEY, SEARCH_API_KEY, SEARCH_ENGINE_ID]):
+             return jsonify({"error": "服务器API密钥未配置，请联系管理员。(Server API keys not configured. Please contact administrator.)"}), 500
+
         data = request.get_json()
         if not data:
             return jsonify({"error": "Invalid JSON payload."}), 400
 
-        # 从请求中获取数据
         major = data.get('major')
-        interests = data.get('interests', '') # 可选
-        resume_text = data.get('resumeText', 'No resume provided.') # 可选
-        lang_code = data.get('language', 'en') # 默认为英语
+        interests = data.get('interests', '')
+        resume_text = data.get('resumeText', 'No resume provided.')
+        lang_code = data.get('language', 'en')
 
         if not major:
             return jsonify({"error": "专业/研究领域是必填项 (Major/Field of Study is required)."}), 400
 
         print(f"🔍 开始分析专业 (Analyzing major): {major} | 兴趣 (Interests): {interests or 'N/A'}")
 
-        # 1. 生成搜索查询
         search_queries = generate_search_queries(major, interests)
         print(f"  -> 生成了 {len(search_queries)} 条搜索指令 (Generated {len(search_queries)} search queries).")
 
-        # 2. 执行搜索并汇总结果
         all_snippets = []
         all_sources = []
         for query in search_queries:
@@ -177,7 +165,6 @@ def analyze_academic_profile():
         search_context = "\n".join(all_snippets) if all_snippets else "在网络搜索中未找到相关信息 (No relevant information found in web search)."
         print(f"  -> 找到了 {len(all_snippets)} 条信息摘要 (Found {len(all_snippets)} snippets).")
 
-        # 3. 准备并发送给Gemini
         language_map = {'en': 'English', 'zh-CN': 'Simplified Chinese (简体中文)', 'zh-TW': 'Traditional Chinese (繁體中文)'}
         output_language = language_map.get(lang_code, 'English')
 
@@ -194,18 +181,15 @@ def analyze_academic_profile():
         response = model.generate_content(full_prompt)
 
         print("✅ 成功从Gemini API收到响应 (Successfully received response from Gemini API).")
-        # 4. 返回结果
         return jsonify({"analysis": response.text, "sources": all_sources})
 
     except Exception as e:
         print(f"!!! 发生意外错误 (An unexpected error occurred): {e} !!!")
-        # 在生产环境中，你可能希望记录更详细的错误信息
         return jsonify({"error": "服务器内部发生错误 (An internal server error occurred)."}), 500
 
 # --- 6. 启动应用 (Run Application) ---
 if __name__ == '__main__':
-    # Cloud Run会通过PORT环境变量设置正确的端口
     port = int(os.environ.get("PORT", 8080))
-    # debug=True仅用于本地开发，在生产中应由Gunicorn管理
     app.run(host='0.0.0.0', port=port, debug=True)
+
 
