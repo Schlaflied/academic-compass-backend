@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学术罗盘 - 后端API测试器</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 800px; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        h1 { text-align: center; color: #4a90e2; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; }
+        input[type="text"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; resize: vertical; }
+        textarea { min-height: 120px; }
+        button { width: 100%; padding: 15px; background-color: #4a90e2; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #357abd; }
+        button:disabled { background-color: #a0c8f0; cursor: not-allowed; }
+        #result-container { margin-top: 30px; padding: 20px; background-color: #f7f7f7; border: 1px solid #e0e0e0; border-radius: 8px; white-space: pre-wrap; font-family: 'Courier New', Courier, monospace; min-height: 100px; overflow-x: auto; }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #fff; animation: spin 1s ease infinite; display: inline-block; vertical-align: middle; margin-left: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>学术罗盘 - 后端API测试器 🧭</h1>
+        
+        <div class="form-group">
+            <label for="major-input">你的专业/学位 (Your Major/Degree)</label>
+            <input type="text" id="major-input" placeholder="例如：PhD in Human-Computer Interaction">
+        </div>
+
+        <div class="form-group">
+            <label for="interests-input">你的研究方向或技能 (Optional: Your Research Interests or Skills)</label>
+            <input type="text" id="interests-input" placeholder="例如：Natural Language Processing, User Research, Python">
+        </div>
+        
+        <div class="form-group">
+            <label for="resume-input">粘贴你的个人简介或简历 (Optional: Paste your bio or resume)</label>
+            <textarea id="resume-input" placeholder="粘贴你的简历文本到这里，可以获得更个性化的分析..."></textarea>
+        </div>
+        
+        <button id="analyze-button">开始分析</button>
+
+        <div id="result-container">（AI的分析报告将显示在这里）</div>
+    </div>
+
+    <script>
+        const analyzeButton = document.getElementById('analyze-button');
+        const resultContainer = document.getElementById('result-container');
+        const majorInput = document.getElementById('major-input');
+        const interestsInput = document.getElementById('interests-input');
+        const resumeInput = document.getElementById('resume-input');
+
+        // 【重要！】这个URL指向的是你本地运行的Python后端服务。
+        const API_URL = 'http://127.0.0.1:8080/analyze'; 
+
+        analyzeButton.addEventListener('click', async function() {
+            if (!majorInput.value) {
+                alert('专业/学位是必填项哦！');
+                return;
+            }
+
+            const originalButtonText = analyzeButton.innerHTML;
+            analyzeButton.innerHTML = '分析中...<div class="spinner"></div>';
+            analyzeButton.disabled = true;
+            resultContainer.textContent = '正在连接云端AI大脑，请稍候...';
+
+            const data = {
+                major: majorInput.value,
+                interests: interestsInput.value,
+                resumeText: resumeInput.value,
+                language: "zh-CN" // 你可以在这里改成 'en' 或 'zh-TW' 来测试多语言
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // 将分析结果和数据来源都显示出来
+                    let report = `--- 分析报告 ---\n\n${result.analysis}`;
+                    if (result.sources && result.sources.length > 0) {
+                        report += "\n\n--- 信息来源 (Cited References) ---\n";
+                        result.sources.forEach(source => {
+                            report += `\n- ${source.title}: ${source.link}`;
+                        });
+                    }
+                    resultContainer.textContent = report;
+                } else {
+                    resultContainer.textContent = `发生错误: ${result.error}`;
+                }
+
+            } catch (error) {
+                resultContainer.textContent = '发生连接错误，请检查：\n1. 你的Python后端服务 (app.py) 是否已在本地成功运行？\n2. 浏览器控制台(F12)是否有报错信息？\n\n' + error.message;
+            } finally {
+                analyzeButton.innerHTML = originalButtonText;
+                analyzeButton.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>

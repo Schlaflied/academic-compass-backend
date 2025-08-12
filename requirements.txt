@@ -1,0 +1,10 @@
+# "学术罗盘" 项目依赖清单 (Project Dependencies)
+# v1.0
+
+Flask==2.3.3
+Werkzeug==2.3.7
+gunicorn
+python-dotenv
+google-generativeai
+Flask-Cors
+requests
