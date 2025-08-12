@@ -1,0 +1,38 @@
+# 这是一个为Python项目准备的 .gitignore 文件模板
+
+# 1. 忽略存放密钥的环境变量文件 (Security)
+# 这是最最重要的一条！
+.env
+
+# 2. 忽略Python自动生成的缓存文件和字节码文件 (Byte-code / Caches)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 3. 忽略虚拟环境文件夹 (Virtual Environments)
+# 虚拟环境文件夹通常很大，而且每个人的电脑上都会自己生成，不需要上传
+venv/
+venv.bak/
+.venv/
+env/
+env.bak/
+ENV/
+
+# 4. 忽略Sass/SCSS缓存文件 (Sass/SCSS Caches)
+# 如果你以后会用到Sass/SCSS来写CSS，这个会有用
+.sass-cache/
+
+# 5. 忽略特定于操作系统的文件 (OS-specific files)
+# 例如macOS的 .DS_Store 和Windows的 Thumbs.db
+.DS_Store
+Thumbs.db
+
+# 6. 忽略一些常见的编辑器和IDE的配置文件 (IDE / Editor folders)
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# 7. 忽略日志文件 (Log files)
+*.log
