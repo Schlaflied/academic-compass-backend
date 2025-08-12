@@ -52,8 +52,8 @@
         const interestsInput = document.getElementById('interests-input');
         const resumeInput = document.getElementById('resume-input');
 
-        // 【重要！】这个URL指向的是你本地运行的Python后端服务。
-        const API_URL = 'http://127.0.0.1:8080/analyze'; 
+        // 【重要更新！】URL已替换为你部署在云端的、公开的后端服务地址！
+        const API_URL = 'https://academic-compass-backend-885033581194.us-central1.run.app/analyze'; 
 
         analyzeButton.addEventListener('click', async function() {
             if (!majorInput.value) {
@@ -97,7 +97,7 @@
                 }
 
             } catch (error) {
-                resultContainer.textContent = '发生连接错误，请检查：\n1. 你的Python后端服务 (app.py) 是否已在本地成功运行？\n2. 浏览器控制台(F12)是否有报错信息？\n\n' + error.message;
+                resultContainer.textContent = '发生连接错误，请检查浏览器控制台(F12)是否有报错信息。\n\n' + error.message;
             } finally {
                 analyzeButton.innerHTML = originalButtonText;
                 analyzeButton.disabled = false;
@@ -107,3 +107,4 @@
 
 </body>
 </html>
+
