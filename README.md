@@ -6,11 +6,11 @@ This is an AI career planning backend service specifically designed for academic
 
 ## 核心功能 / Core Features
 
-* **学术职业分析 / Academic Career Analysis:** 使用 **Google Gemini 1.5 Flash** 模型，根据用户的专业/学位（Major）生成 2-3 条潜在职业路径分析报告。
-* **区域聚焦 / Regional Focus:** 搜索和报告的重点关注 **加拿大 (Canada)** 市场的薪酬和就业趋势。
-* **信息可溯源 / Citable Insights:** 报告严格遵守 RAG（检索增强生成）原则，生成的每条信息都带有清晰的引用来源。
-* **速率限制 / Rate Limiting:** 集成 **Flask-Limiter**，对 API 调用实行严格的每日限流（默认 5 次/天/IP），以保护资源并提供稳定的免费服务。
-* **多语言支持 / Multilingual Support:** 支持报告生成为英文、简体中文或繁体中文。
+* **学术职业分析 / Academic Career Analysis:** 使用 **Google Gemini 1.5 Flash** 模型，根据用户的专业/学位（Major）生成 2-3 条潜在职业路径分析报告。/ Generates an analysis report featuring 2-3 potential career paths based on the user's major/degree using the **Google Gemini 1.5 Flash** model.
+* **区域聚焦 / Regional Focus:** 搜索和报告的重点关注 **加拿大 (Canada)** 市场的薪酬和就业趋势。/ The search and report focus specifically on salary and employment trends within the **Canadian (Canada)** market.
+* **信息可溯源 / Citable Insights:** 报告严格遵守 RAG（检索增强生成）原则，生成的每条信息都带有清晰的引用来源。/ The report strictly adheres to RAG (Retrieval-Augmented Generation) principles, with every piece of information generated including clear source citations.
+* **速率限制 / Rate Limiting:** 集成 **Flask-Limiter**，对 API 调用实行严格的每日限流（默认 5 次/天/IP），以保护资源并提供稳定的免费服务。/ Integrates **Flask-Limiter** to enforce strict daily API rate limits (default 5 times/day/IP) to protect resources and provide stable free service.
+* **多语言支持 / Multilingual Support:** 支持报告生成为英文、简体中文或繁体中文。/ Supports report generation in English, Simplified Chinese, or Traditional Chinese.
 
 ## 技术栈 / Tech Stack
 
